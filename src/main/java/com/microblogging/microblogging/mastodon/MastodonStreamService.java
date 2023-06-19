@@ -1,6 +1,7 @@
 package com.microblogging.microblogging.mastodon;
 
 import com.google.gson.Gson;
+import com.microblogging.microblogging.dto.Message;
 import com.sys1yagi.mastodon4j.MastodonClient;
 import com.sys1yagi.mastodon4j.api.Handler;
 import com.sys1yagi.mastodon4j.api.Shutdownable;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,14 +27,19 @@ public class MastodonStreamService {
     private static final Logger LOG = LoggerFactory.getLogger(MastodonStreamService.class);
     private Shutdownable shutdownable;
 
+    private final SimpMessagingTemplate messagingTemplate;
+
     /**
      * Constructs a MastodonStreamService with the provided instance URL and access token.
      *
-     * @param instanceUrl  the URL of the Mastodon instance
-     * @param accessToken  the access token for authentication
+     * @param instanceUrl       the URL of the Mastodon instance
+     * @param accessToken       the access token for authentication
+     * @param messagingTemplate messaging Template to send message to websocket
      */
     public MastodonStreamService(@Value("${mastodon.instanceUrl}") String instanceUrl,
-                                 @Value("${mastodon.accessToken}") String accessToken) {
+                                 @Value("${mastodon.accessToken}") String accessToken,
+                                 SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
         MastodonClient mastodonClient = new MastodonClient.Builder(instanceUrl, new OkHttpClient.Builder(), new Gson())
                 .accessToken(accessToken)
                 .useStreamingApi()
@@ -59,6 +66,8 @@ public class MastodonStreamService {
             @Override
             public void onStatus(Status status) {
                 LOG.info("@" + status.getAccount().getUserName() + ": " + status.getContent());
+                Message message = new Message(status.getAccount().getUserName(), status.getContent(), "Mastodon");
+                messagingTemplate.convertAndSend("/receive/message", message);
             }
 
         };
