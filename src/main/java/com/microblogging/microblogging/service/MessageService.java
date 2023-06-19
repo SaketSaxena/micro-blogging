@@ -6,6 +6,9 @@ import com.microblogging.microblogging.repository.MessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Service class for managing messages.
  * This class handles the logic for saving messages in the database.
@@ -41,5 +44,16 @@ public class MessageService {
      */
     private Messages mapToEntity(Message message) {
         return new Messages(message.author(), message.message(), message.source());
+    }
+
+    /**
+     * Retrieves a list of messages from the repository and maps them to a list of Message objects.
+     *
+     * @return a list of Message objects
+     */
+    public List<Message> getMessages() {
+        return messageRepository.findAll().stream()
+                .map(messages -> new Message(messages.getAuthor(), messages.getMessage(), messages.getSource()))
+                .collect(Collectors.toList());
     }
 }
