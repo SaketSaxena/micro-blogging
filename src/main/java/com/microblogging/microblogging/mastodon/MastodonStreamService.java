@@ -2,6 +2,7 @@ package com.microblogging.microblogging.mastodon;
 
 import com.google.gson.Gson;
 import com.microblogging.microblogging.dto.Message;
+import com.microblogging.microblogging.service.MessageService;
 import com.sys1yagi.mastodon4j.MastodonClient;
 import com.sys1yagi.mastodon4j.api.Handler;
 import com.sys1yagi.mastodon4j.api.Shutdownable;
@@ -28,6 +29,7 @@ public class MastodonStreamService {
     private Shutdownable shutdownable;
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final MessageService messageService;
 
     /**
      * Constructs a MastodonStreamService with the provided instance URL and access token.
@@ -35,11 +37,14 @@ public class MastodonStreamService {
      * @param instanceUrl       the URL of the Mastodon instance
      * @param accessToken       the access token for authentication
      * @param messagingTemplate messaging Template to send message to websocket
+     * @param messageService
      */
     public MastodonStreamService(@Value("${mastodon.instanceUrl}") String instanceUrl,
                                  @Value("${mastodon.accessToken}") String accessToken,
-                                 SimpMessagingTemplate messagingTemplate) {
+                                 SimpMessagingTemplate messagingTemplate,
+                                 MessageService messageService) {
         this.messagingTemplate = messagingTemplate;
+        this.messageService = messageService;
         MastodonClient mastodonClient = new MastodonClient.Builder(instanceUrl, new OkHttpClient.Builder(), new Gson())
                 .accessToken(accessToken)
                 .useStreamingApi()
@@ -68,6 +73,7 @@ public class MastodonStreamService {
                 LOG.info("@" + status.getAccount().getUserName() + ": " + status.getContent());
                 Message message = new Message(status.getAccount().getUserName(), status.getContent(), "Mastodon");
                 messagingTemplate.convertAndSend("/receive/message", message);
+                messageService.saveMessage(message);
             }
 
         };
