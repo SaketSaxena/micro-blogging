@@ -16,12 +16,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service class for streaming Mastodon notifications and statuses.
+ */
 @Service
 public class MastodonStreamService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MastodonStreamService.class);
     private Shutdownable shutdownable;
 
+    /**
+     * Constructs a MastodonStreamService with the provided instance URL and access token.
+     *
+     * @param instanceUrl  the URL of the Mastodon instance
+     * @param accessToken  the access token for authentication
+     */
     public MastodonStreamService(@Value("${mastodon.instanceUrl}") String instanceUrl,
                                  @Value("${mastodon.accessToken}") String accessToken) {
         MastodonClient mastodonClient = new MastodonClient.Builder(instanceUrl, new OkHttpClient.Builder(), new Gson())
@@ -62,6 +71,9 @@ public class MastodonStreamService {
 
     }
 
+    /**
+     * Shuts down the Mastodon stream.
+     */
     @PreDestroy
     public void shutdown() {
         if (shutdownable != null) {
